@@ -1,17 +1,77 @@
 package shentong
 
 import (
+	"database/sql"
 	"fmt"
+	"strings"
+
 	"github.com/Mystery00/gorm-shentong/oscar"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/migrator"
-	"strings"
 )
 
-// TODO 未实现
 type Migrator struct {
 	migrator.Migrator
+}
+
+type columnMetadata struct {
+	Name       string        `gorm:"column:COLUMN_NAME"`
+	DataType   string        `gorm:"column:DATA_TYPE"`
+	Length     sql.NullInt64 `gorm:"column:CHAR_LENGTH"`
+	Precision  sql.NullInt64 `gorm:"column:DATA_PRECISION"`
+	Scale      sql.NullInt64 `gorm:"column:DATA_SCALE"`
+	Nullable   string        `gorm:"column:NULLABLE"`
+	PrimaryKey string        `gorm:"column:PRIMARY_KEY"`
+}
+
+func (m Migrator) ColumnTypes(value interface{}) ([]gorm.ColumnType, error) {
+	var columnTypes []gorm.ColumnType
+	err := m.RunWithValue(value, func(stmt *gorm.Statement) error {
+		table := stmt.Table
+		if parts := strings.Split(table, "."); len(parts) > 1 {
+			table = parts[len(parts)-1]
+		}
+
+		var columns []columnMetadata
+		err := m.DB.Raw(`
+SELECT c.COLUMN_NAME,
+       c.DATA_TYPE,
+       c.CHAR_LENGTH,
+       c.DATA_PRECISION,
+       c.DATA_SCALE,
+       c.NULLABLE,
+       CASE WHEN EXISTS (
+           SELECT 1
+             FROM USER_CONS_COLUMNS cc
+             JOIN USER_CONSTRAINTS con ON con.CONSTRAINT_NAME = cc.CONSTRAINT_NAME
+            WHERE con.CONSTRAINT_TYPE = 'P'
+              AND cc.TABLE_NAME = c.TABLE_NAME
+              AND cc.COLUMN_NAME = c.COLUMN_NAME
+       ) THEN 'Y' ELSE 'N' END AS PRIMARY_KEY
+  FROM USER_TAB_COLUMNS c
+ WHERE c.TABLE_NAME = ?
+ ORDER BY c.COLUMN_ID`, strings.ToUpper(table)).Scan(&columns).Error
+		if err != nil {
+			return err
+		}
+
+		columnTypes = make([]gorm.ColumnType, 0, len(columns))
+		for _, column := range columns {
+			columnType := migrator.ColumnType{
+				NameValue:        sql.NullString{String: column.Name, Valid: true},
+				DataTypeValue:    sql.NullString{String: column.DataType, Valid: true},
+				PrimaryKeyValue:  sql.NullBool{Bool: column.PrimaryKey == "Y", Valid: true},
+				NullableValue:    sql.NullBool{Bool: column.Nullable == "Y", Valid: true},
+				LengthValue:      column.Length,
+				DecimalSizeValue: column.Precision,
+				ScaleValue:       column.Scale,
+			}
+			columnTypes = append(columnTypes, columnType)
+		}
+		return nil
+	})
+	return columnTypes, err
 }
 
 func (m Migrator) CurrentDatabase() (name string) {

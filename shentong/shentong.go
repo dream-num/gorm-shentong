@@ -3,22 +3,23 @@ package shentong
 import (
 	"database/sql"
 	"fmt"
-	"github.com/Mystery00/go-shentong"
-	_ "github.com/Mystery00/go-shentong"
+	"strconv"
+	"strings"
+
 	"github.com/Mystery00/gorm-shentong/oscar"
+	shentongdriver "github.com/team-ide/go-driver/db_shentong"
 	"gorm.io/gorm"
 	"gorm.io/gorm/callbacks"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/logger"
 	"gorm.io/gorm/migrator"
 	"gorm.io/gorm/schema"
-	"strconv"
-	"strings"
 )
 
 type Config struct {
 	DriverName        string
 	DSN               string
+	Schema            string
 	DSNConfig         *oscar.Config
 	Conn              *sql.DB
 	DefaultStringSize uint
@@ -27,7 +28,7 @@ type Config struct {
 }
 
 func Init() {
-	shentong.Init()
+	// db_shentong 在包初始化时注册 ACI 驱动，保留此方法兼容已有调用方。
 }
 
 type Dialector struct {
@@ -52,8 +53,7 @@ func (d Dialector) Initialize(db *gorm.DB) (err error) {
 	// register callbacks
 	callbacks.RegisterDefaultCallbacks(db, &callbacks.Config{LastInsertIDReversed: true})
 
-	// 官方驱动里面就写了这个
-	d.DriverName = "aci"
+	d.DriverName = shentongdriver.GetDriverName()
 
 	if d.DSN == "" {
 		d.DSN = d.DSNConfig.FormatDSN()
@@ -71,6 +71,20 @@ func (d Dialector) Initialize(db *gorm.DB) (err error) {
 	if d.FieldConvertType != None {
 		// 没有配置，那么自然不需要注册钩子
 		if err = db.Callback().Query().Before("*").Register("shentong_query", queryFix); err != nil {
+			return err
+		}
+	}
+	if d.Schema != "" {
+		if err = db.Callback().Create().Before("*").Register("shentong_schema_create", schemaFix); err != nil {
+			return err
+		}
+		if err = db.Callback().Query().Before("*").Register("shentong_schema_query", schemaFix); err != nil {
+			return err
+		}
+		if err = db.Callback().Update().Before("*").Register("shentong_schema_update", schemaFix); err != nil {
+			return err
+		}
+		if err = db.Callback().Delete().Before("*").Register("shentong_schema_delete", schemaFix); err != nil {
 			return err
 		}
 	}

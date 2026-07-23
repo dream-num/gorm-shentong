@@ -1,9 +1,10 @@
 package oscar
 
 import (
+	"strings"
+
 	"github.com/emirpasic/gods/sets/hashset"
 	"github.com/thoas/go-funk"
-	"strings"
 )
 
 var ReservedWords = hashset.New(funk.Map(ReservedWordsList, func(s string) interface{} { return s }).([]interface{})...)

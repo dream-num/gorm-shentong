@@ -1,6 +1,8 @@
 package shentong
 
 import (
+	"strings"
+
 	"gorm.io/gorm"
 )
 
@@ -29,4 +31,12 @@ func queryFix(db *gorm.DB) {
 		//将新的映射关系存入db.Statement.Schema.FieldsByDBName
 		db.Statement.Schema.FieldsByDBName[converter(field.DBName)] = field
 	}
+}
+
+func schemaFix(db *gorm.DB) {
+	config := db.Dialector.(*Dialector).Config
+	if config.Schema == "" || db.Statement.Table == "" || strings.Contains(db.Statement.Table, ".") {
+		return
+	}
+	db.Statement.Table = strings.ToUpper(config.Schema) + "." + strings.ToUpper(db.Statement.Table)
 }
