@@ -1,4 +1,4 @@
-module github.com/zsq1234/gorm-shentong
+module github.com/dream-num/gorm-shentong
 
 go 1.18
 
