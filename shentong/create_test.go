@@ -3,6 +3,7 @@ package shentong
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -45,9 +46,8 @@ func TestOnConflictIsBuiltAsMerge(t *testing.T) {
 	sql := result.Statement.SQL.String()
 	for _, fragment := range []string{
 		"MERGE INTO UNIVERSER.PERMISSION target",
-		"USING (VALUES (:1,:2,:3,:4,:5,:6)) excluded(perm_id,unit_id,object,subject,role,deleted)",
-		"target.unit_id=excluded.unit_id AND target.object=excluded.object AND target.subject=excluded.subject",
-		"WHEN MATCHED THEN UPDATE SET deleted=excluded.deleted,role=excluded.role",
+		"USING DUAL ON (target.unit_id=:1 AND target.object=:2 AND target.subject=:3)",
+		"WHEN MATCHED THEN UPDATE SET deleted=:4,role=:5",
 		"WHEN NOT MATCHED THEN INSERT",
 	} {
 		if !strings.Contains(sql, fragment) {
@@ -57,8 +57,8 @@ func TestOnConflictIsBuiltAsMerge(t *testing.T) {
 	if strings.Contains(sql, "ON CONFLICT") {
 		t.Fatalf("PostgreSQL ON CONFLICT leaked into ShenTong SQL: %s", sql)
 	}
-	if len(result.Statement.Vars) != 6 {
-		t.Fatalf("got %d bind variables, want 6", len(result.Statement.Vars))
+	if len(result.Statement.Vars) != 11 {
+		t.Fatalf("got %d bind variables, want 11", len(result.Statement.Vars))
 	}
 }
 
@@ -87,12 +87,12 @@ func TestOnConflictUpdateAllUsesPrimaryKey(t *testing.T) {
 		t.Fatal(result.Error)
 	}
 	sql := result.Statement.SQL.String()
-	if !strings.Contains(sql, "target.perm_id=excluded.perm_id") {
+	if !strings.Contains(sql, "target.perm_id=:1") {
 		t.Fatalf("UpdateAll did not use the primary key: %s", sql)
 	}
 }
 
-func TestOnConflictBatchCreateUsesValuesSource(t *testing.T) {
+func TestOnConflictBatchDryRunBuildsFirstMerge(t *testing.T) {
 	db := openDryRunDB(t)
 	permissions := []permissionForMergeTest{
 		{PermID: "p1", UnitID: "u1"},
@@ -105,11 +105,14 @@ func TestOnConflictBatchCreateUsesValuesSource(t *testing.T) {
 	if result.Error != nil {
 		t.Fatal(result.Error)
 	}
-	sql := result.Statement.SQL.String()
-	if !strings.Contains(sql, "USING (VALUES (:1,:2,:3,:4,:5,:6),(:7,:8,:9,:10,:11,:12))") {
-		t.Fatalf("batch MERGE does not contain all source rows: %s", sql)
+	if !strings.Contains(result.Statement.SQL.String(), "USING DUAL") {
+		t.Fatalf("batch dry run did not build MERGE: %s", result.Statement.SQL.String())
 	}
-	if len(result.Statement.Vars) != 12 {
-		t.Fatalf("got %d bind variables, want 12", len(result.Statement.Vars))
+}
+
+func TestNormalizeMergeTime(t *testing.T) {
+	input := time.Date(2026, 8, 13, 17, 23, 45, 123456789, time.Local)
+	if got, want := normalizeMergeValue(input), "2026-08-13 17:23:45.123456789"; got != want {
+		t.Fatalf("got %#v, want %#v", got, want)
 	}
 }
