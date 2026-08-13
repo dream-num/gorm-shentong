@@ -45,6 +45,7 @@ func TestOnConflictIsBuiltAsMerge(t *testing.T) {
 	sql := result.Statement.SQL.String()
 	for _, fragment := range []string{
 		"MERGE INTO UNIVERSER.PERMISSION target",
+		"USING (VALUES (:1,:2,:3,:4,:5,:6)) excluded(perm_id,unit_id,object,subject,role,deleted)",
 		"target.unit_id=excluded.unit_id AND target.object=excluded.object AND target.subject=excluded.subject",
 		"WHEN MATCHED THEN UPDATE SET deleted=excluded.deleted,role=excluded.role",
 		"WHEN NOT MATCHED THEN INSERT",
@@ -91,7 +92,7 @@ func TestOnConflictUpdateAllUsesPrimaryKey(t *testing.T) {
 	}
 }
 
-func TestOnConflictBatchCreateUsesUnionAllSource(t *testing.T) {
+func TestOnConflictBatchCreateUsesValuesSource(t *testing.T) {
 	db := openDryRunDB(t)
 	permissions := []permissionForMergeTest{
 		{PermID: "p1", UnitID: "u1"},
@@ -105,7 +106,7 @@ func TestOnConflictBatchCreateUsesUnionAllSource(t *testing.T) {
 		t.Fatal(result.Error)
 	}
 	sql := result.Statement.SQL.String()
-	if !strings.Contains(sql, " FROM DUAL UNION ALL SELECT ") {
+	if !strings.Contains(sql, "USING (VALUES (:1,:2,:3,:4,:5,:6),(:7,:8,:9,:10,:11,:12))") {
 		t.Fatalf("batch MERGE does not contain all source rows: %s", sql)
 	}
 	if len(result.Statement.Vars) != 12 {

@@ -56,23 +56,28 @@ func mergeOnConflict(db *gorm.DB) {
 	stmt.Vars = nil
 	stmt.WriteString("MERGE INTO ")
 	stmt.WriteQuoted(clause.Table{Name: clause.CurrentTable})
-	stmt.WriteString(" target USING (")
+	stmt.WriteString(" target USING (VALUES ")
 	for rowIndex, row := range values.Values {
 		if rowIndex > 0 {
-			stmt.WriteString(" UNION ALL ")
+			stmt.WriteByte(',')
 		}
-		stmt.WriteString("SELECT ")
-		for columnIndex, column := range values.Columns {
+		stmt.WriteByte('(')
+		for columnIndex := range values.Columns {
 			if columnIndex > 0 {
 				stmt.WriteByte(',')
 			}
 			stmt.AddVar(stmt, row[columnIndex])
-			stmt.WriteString(" AS ")
-			stmt.WriteQuoted(column)
 		}
-		stmt.WriteString(" FROM DUAL")
+		stmt.WriteByte(')')
 	}
-	stmt.WriteString(") excluded ON (")
+	stmt.WriteString(") excluded(")
+	for index, column := range values.Columns {
+		if index > 0 {
+			stmt.WriteByte(',')
+		}
+		stmt.WriteQuoted(column)
+	}
+	stmt.WriteString(") ON (")
 	for index, column := range onConflict.Columns {
 		if index > 0 {
 			stmt.WriteString(" AND ")
