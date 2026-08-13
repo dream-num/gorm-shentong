@@ -52,6 +52,9 @@ func (d Dialector) Name() string {
 func (d Dialector) Initialize(db *gorm.DB) (err error) {
 	// register callbacks
 	callbacks.RegisterDefaultCallbacks(db, &callbacks.Config{LastInsertIDReversed: true})
+	if err = db.Callback().Create().Before("gorm:create").Register("shentong:merge_on_conflict", mergeOnConflict); err != nil {
+		return err
+	}
 
 	d.DriverName = shentongdriver.GetDriverName()
 
