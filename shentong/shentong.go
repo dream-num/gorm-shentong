@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Mystery00/gorm-shentong/oscar"
 	shentongdriver "github.com/team-ide/go-driver/db_shentong"
+	"github.com/zsq1234/gorm-shentong/oscar"
 	"gorm.io/gorm"
 	"gorm.io/gorm/callbacks"
 	"gorm.io/gorm/clause"
