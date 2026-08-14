@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Mystery00/gorm-shentong/oscar"
+	"github.com/dream-num/gorm-shentong/oscar"
 	shentongdriver "github.com/team-ide/go-driver/db_shentong"
 	"gorm.io/gorm"
 	"gorm.io/gorm/callbacks"
@@ -51,7 +51,11 @@ func (d Dialector) Name() string {
 
 func (d Dialector) Initialize(db *gorm.DB) (err error) {
 	// register callbacks
-	callbacks.RegisterDefaultCallbacks(db, &callbacks.Config{LastInsertIDReversed: true})
+	callbackConfig := &callbacks.Config{LastInsertIDReversed: true}
+	callbacks.RegisterDefaultCallbacks(db, callbackConfig)
+	if err = db.Callback().Create().Replace("gorm:create", create(callbackConfig)); err != nil {
+		return err
+	}
 
 	d.DriverName = shentongdriver.GetDriverName()
 
