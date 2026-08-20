@@ -62,6 +62,28 @@ func TestOnConflictIsBuiltAsMerge(t *testing.T) {
 	}
 }
 
+func TestOnConflictInlinesEmptyStrings(t *testing.T) {
+	db := openDryRunDB(t)
+	result := db.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "unit_id"}, {Name: "object"}, {Name: "subject"}},
+		DoUpdates: clause.AssignmentColumns([]string{"deleted", "role"}),
+	}).Create(&permissionForMergeTest{PermID: "p1", UnitID: "u1", Object: "o1", Subject: "", Role: "owner"})
+	if result.Error != nil {
+		t.Fatal(result.Error)
+	}
+
+	sql := result.Statement.SQL.String()
+	if !strings.Contains(sql, "target.subject=''") {
+		t.Fatalf("empty conflict value was not inlined: %s", sql)
+	}
+	if !strings.Contains(sql, "VALUES (:5,:6,:7,'',:8,:9)") {
+		t.Fatalf("empty insert value was not inlined: %s", sql)
+	}
+	if len(result.Statement.Vars) != 9 {
+		t.Fatalf("got %d bind variables, want 9", len(result.Statement.Vars))
+	}
+}
+
 func TestOnConflictDoNothingIsBuiltAsInsertOnlyMerge(t *testing.T) {
 	db := openDryRunDB(t)
 	result := db.Clauses(clause.OnConflict{

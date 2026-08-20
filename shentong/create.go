@@ -177,7 +177,17 @@ func mergeColumnValue(values clause.Values, row []interface{}, name string) (int
 }
 
 func addMergeVar(stmt *gorm.Statement, value interface{}) {
-	stmt.AddVar(stmt, normalizeMergeValue(value))
+	normalized := normalizeMergeValue(value)
+	if stringValue, ok := normalized.(string); ok && stringValue == "" {
+		// The ACI driver binds an empty string as SQLT_AFC with a one-byte
+		// buffer/length. In a MERGE statement ShenTong parses that value as an
+		// unterminated quoted string. An empty SQL literal has the same value and
+		// avoids the broken bind path. It is safe to inline because it is a fixed
+		// literal and contains no user input.
+		stmt.WriteString("''")
+		return
+	}
+	stmt.AddVar(stmt, normalized)
 }
 
 // The ACI driver renders time.Time bind values as an unquoted timestamp inside
