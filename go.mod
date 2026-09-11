@@ -3,7 +3,7 @@ module github.com/dream-num/gorm-shentong
 go 1.18
 
 require (
-	github.com/dream-num/go-aci v0.0.0-20260911051358-a5583e5f6a15
+	github.com/dream-num/go-aci v0.0.0-20260911054247-a474ae18feb0
 	github.com/emirpasic/gods v1.18.1
 	github.com/thoas/go-funk v0.9.2
 	gorm.io/gorm v1.24.0
