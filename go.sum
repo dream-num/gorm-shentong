@@ -1,5 +1,5 @@
-gitee.com/shentongdata/go-aci v1.0.27 h1:JHEpJTC8y24nrKavg3pBJ6JbffKc3d20Js278xaY8E0=
-gitee.com/shentongdata/go-aci v1.0.27/go.mod h1:eywb8vTY8CG0kGF1JG89rgYQfrm+ogSEqYB1CWih2qY=
+github.com/dream-num/go-aci v0.0.0-20260911034604-d5550985d1d5 h1:SAqVTCwSBpYbj5AihETqoVo4w1TxyLp0tqfly3VptW0=
+github.com/dream-num/go-aci v0.0.0-20260911034604-d5550985d1d5/go.mod h1:4zqTr0mJMtYzT8hLgvzMjapmpmq3HKywm3jLkC8IQNI=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

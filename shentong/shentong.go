@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	_ "gitee.com/shentongdata/go-aci"
+	_ "github.com/dream-num/go-aci"
 	"github.com/dream-num/gorm-shentong/oscar"
 	"gorm.io/gorm"
 	"gorm.io/gorm/callbacks"
