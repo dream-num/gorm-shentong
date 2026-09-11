@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
+	_ "gitee.com/shentongdata/go-aci"
 	"github.com/dream-num/gorm-shentong/oscar"
-	shentongdriver "github.com/team-ide/go-driver/db_shentong"
 	"gorm.io/gorm"
 	"gorm.io/gorm/callbacks"
 	"gorm.io/gorm/clause"
@@ -57,7 +57,10 @@ func (d Dialector) Initialize(db *gorm.DB) (err error) {
 		return err
 	}
 
-	d.DriverName = shentongdriver.GetDriverName()
+	// 官方 go-aci 在 init 中注册名为 "aci"。保留显式配置，便于调用方替换驱动。
+	if d.DriverName == "" {
+		d.DriverName = "aci"
+	}
 
 	if d.DSN == "" {
 		d.DSN = d.DSNConfig.FormatDSN()
